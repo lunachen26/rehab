@@ -9,7 +9,7 @@
     showToast,
     currentDate,
   } from "../../lib/store";
-  import { treatmentProgress, treatmentCounts } from "../../lib/treatments.js";
+  import { treatmentProgress, treatmentCounts, treatmentFee } from "../../lib/treatments.js";
 
   export let isOpen = false;
   /**
@@ -242,13 +242,13 @@
 
         <div class="form-control w-full">
           <label class="label" for="p-price"><span class="label-text">单次费用 (元)</span></label>
-          <input id="p-price" type="number" bind:value={price} placeholder="0" class="input input-bordered w-full" />
+          <input id="p-price" type="number" min="0" step="0.01" bind:value={price} placeholder="0" class="input input-bordered w-full" />
         </div>
 
         <!-- Category -->
         <div class="form-control">
           <div class="label"><span class="label-text">类别</span></div>
-          <div class="flex gap-4">
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
             <label class="label cursor-pointer gap-2">
               <input
                 type="radio"
@@ -267,7 +267,9 @@
               />
               <span class="label-text">住院</span>
             </label>
+            <span class="text-sm font-semibold tabular-nums" aria-live="polite">费用总和 ¥{treatmentFee(price, counts.completed).toFixed(2)}</span>
           </div>
+          <p class="text-xs text-base-content/60 mt-1">单次费用 × 累计已做 {counts.completed} 次；30 分钟计 1 次，60 分钟计 2 次，未做和待治疗不计费。按当前单次费用计算。</p>
         </div>
 
         <!-- Duration -->

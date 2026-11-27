@@ -13,6 +13,14 @@ export function treatmentUnits(slot) {
   return Math.max(1, Math.ceil((Number(slot.duration) || 30) / 30));
 }
 
+// One charge per completed treatment unit; calculate in cents to avoid drift.
+export function treatmentFee(price, completed) {
+  const amount = Number(price);
+  const count = Number(completed);
+  if (!Number.isFinite(amount) || amount < 0 || !Number.isInteger(count) || count < 0) return 0;
+  return Math.round(amount * 100) * count / 100;
+}
+
 export function treatmentStatus(date, time, slot, now = new Date()) {
   if (slot.status === 'missed') return 'missed';
   // Ignore premature completion flags saved by older versions as well.

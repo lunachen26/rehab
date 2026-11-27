@@ -1,6 +1,6 @@
 <script>
   import { schedule, patients, archivedPatients, currentDate, treatmentClock } from "../../lib/store";
-  import { treatmentStatus, treatmentUnits } from "../../lib/treatments.js";
+  import { treatmentStatus, treatmentUnits, treatmentFee } from "../../lib/treatments.js";
   import { fade, fly } from "svelte/transition";
 
   export let isOpen = false;
@@ -36,7 +36,7 @@
             // If patient deleted, we might not find them. Use defaults.
             // Or maybe we should keep historical data snapshotted?
             // For now, use current patient data.
-            const price = p ? Number(p.price) || 0 : 0;
+            const income = treatmentFee(p?.price, treatmentUnits(slot));
 
             if (!accum[pid])
               accum[pid] = {
@@ -45,9 +45,9 @@
                 name: p ? p.name : "Unknown",
               };
             accum[pid].count += treatmentUnits(slot);
-            accum[pid].income += price;
+            accum[pid].income = Math.round((accum[pid].income + income) * 100) / 100;
 
-            totalIncome += price;
+            totalIncome = Math.round((totalIncome + income) * 100) / 100;
             totalVisits += 1;
             totalTreatments += treatmentUnits(slot);
           }

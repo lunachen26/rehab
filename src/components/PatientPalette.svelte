@@ -9,6 +9,7 @@
   } from "../lib/store";
   import { createEventDispatcher } from "svelte";
   import { fade } from "svelte/transition";
+  import { treatmentFee } from "../lib/treatments.js";
 
   const dispatch = createEventDispatcher();
 
@@ -110,6 +111,8 @@
 
         <span>{p.name}</span>
         <span class="text-xs" title="所有历史已完成治疗的累计次数（30分钟1次，60分钟2次）">累计已做 {$patientTreatmentCounts[p.id]?.completed || 0} 次</span>
+        <span class="text-xs">{p.category === 'Outpatient' ? '门诊' : '住院'}</span>
+        <span class="text-xs tabular-nums" title="单次费用 × 累计已做次数">费用总和 ¥{treatmentFee(p.price, $patientTreatmentCounts[p.id]?.completed || 0).toFixed(2)}</span>
         {#if $patientProgress[p.id]}
           <span class="text-xs">剩余 {$patientProgress[p.id].remaining} 次</span>
         {/if}
