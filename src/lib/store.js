@@ -1,6 +1,6 @@
 
 import { writable, readable, derived, get } from 'svelte/store';
-import { treatmentProgress, treatmentCounts, canCompleteTreatment } from './treatments.js';
+import { treatmentProgress, treatmentCounts, canCompleteTreatment, monthlyTreatmentCount } from './treatments.js';
 
 // --- Data Structures ---
 // Patient: { id, name, type, duration (30|60), color }
@@ -53,7 +53,10 @@ export const patientProgress = derived(
 export const patientTreatmentCounts = derived(
   [patients, archivedPatients, schedule, currentDate, treatmentClock],
   ([$patients, $archived, $schedule, $date, $clock]) => Object.fromEntries(
-    [...$patients, ...$archived].map(p => [p.id, treatmentCounts(p.id, $schedule, $date, $clock)])
+    [...$patients, ...$archived].map(p => [p.id, {
+      ...treatmentCounts(p.id, $schedule, $date, $clock),
+      monthlyCompleted: monthlyTreatmentCount(p.id, $schedule, $date, $clock)
+    }])
   )
 );
 

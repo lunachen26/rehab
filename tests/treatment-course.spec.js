@@ -18,6 +18,23 @@ async function seed(page, data = patient, appointments = {}) {
 const chip = page => page.locator('button').filter({ has: page.locator('[aria-label="编辑 次数测试患者"]') });
 const row = (page, time) => page.locator('div.group').filter({ has: page.getByText(time, { exact: true }) });
 
+test('palette keeps lifetime counts but shows only fees for the selected month', async ({ page }) => {
+  await seed(page, patient, {
+    '2025-11-24': { '09:00': { ...slot, duration: 30 } },
+    '2026-10-24': { '09:00': { ...slot, duration: 30 } },
+    '2026-11-24': { '09:00': slot },
+    '2026-11-26': { '09:00': slot },
+  });
+  await expect(chip(page)).toContainText('累计已做 4 次');
+  await expect(chip(page)).toContainText('本月费用 ¥200.00');
+  await page.locator('header input[type="date"]').fill('2026-10-25');
+  await expect(chip(page)).toContainText('累计已做 4 次');
+  await expect(chip(page)).toContainText('本月费用 ¥100.00');
+  await page.locator('header input[type="date"]').fill('2026-12-25');
+  await expect(chip(page)).toContainText('累计已做 4 次');
+  await expect(chip(page)).toContainText('本月费用 ¥0.00');
+});
+
 test('completion stays disabled before the appointment ends and ignores older premature flags', async ({ page }) => {
   await seed(page, patient, { '2026-11-25': { '13:00': { ...slot, status: 'completed' } } });
   await expect(chip(page)).toContainText('剩余 5 次');

@@ -44,6 +44,12 @@ export function treatmentCounts(patientId, schedule, selectedDate, now = new Dat
   return { completed, dailyCompleted };
 }
 
+export function monthlyTreatmentCount(patientId, schedule, selectedDate, now = new Date()) {
+  const month = selectedDate.slice(0, 7);
+  const monthlySchedule = Object.fromEntries(Object.entries(schedule).filter(([date]) => date.slice(0, 7) === month));
+  return treatmentCounts(patientId, monthlySchedule, selectedDate, now).completed;
+}
+
 export function treatmentProgress(patient, schedule, now = new Date()) {
   if (!hasTreatmentCourse(patient)) return null;
   let completed = 0;
