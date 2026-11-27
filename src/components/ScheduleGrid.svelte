@@ -7,7 +7,9 @@
     selectedPatientId,
     paintSlot,
     scheduleSettings,
+    treatmentClock,
   } from "../lib/store";
+  import { treatmentStatus, statusLabels } from "../lib/treatments.js";
   import { createEventDispatcher } from "svelte";
 
   const dispatch = createEventDispatcher();
@@ -105,6 +107,7 @@
                   >
                     {patient?.name || "未知"}
                   </span>
+                  <span class="text-xs text-base-content/70">{statusLabels[treatmentStatus($currentDate, slot.isHead ? time : slot.headTime, slot, $treatmentClock)]}</span>
                   {#if patient?.type}
                     <span
                       class="text-[10px] text-base-content/60 truncate max-w-[150px]"

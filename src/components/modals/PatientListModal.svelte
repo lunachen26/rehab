@@ -8,6 +8,7 @@
     showToast,
     clearAllPatients,
     currentDate,
+    patientProgress,
   } from "../../lib/store";
   import { createEventDispatcher, onMount } from "svelte";
   import { fade, fly } from "svelte/transition";
@@ -333,6 +334,9 @@
                   <div class="flex-1 min-w-0">
                     <div class="font-medium truncate flex items-center gap-2">
                       {p.name}
+                      {#if $patientProgress[p.id]}
+                        <span class="badge badge-sm badge-outline">剩余 {$patientProgress[p.id].remaining} 次</span>
+                      {/if}
                       {#if $selectedPatientId === p.id}
                         <span class="badge badge-xs badge-primary">已选择</span>
                       {/if}
@@ -343,6 +347,7 @@
                         • {p.contact}{/if}
                       • {p.duration || 30}分钟默认
                     </div>
+                    {#if p.notes}<p class="text-sm text-base-content/60 whitespace-pre-wrap">备注：{p.notes}</p>{/if}
                   </div>
 
                   <!-- Edit Action -->

@@ -1,5 +1,6 @@
 
-import { writable, get } from 'svelte/store';
+import { writable, readable, derived, get } from 'svelte/store';
+import { treatmentProgress, treatmentCounts, canCompleteTreatment } from './treatments.js';
 
 // --- Data Structures ---
 // Patient: { id, name, type, duration (30|60), color }
@@ -36,6 +37,25 @@ persist('rehab_patients_v3', patients, []);
 persist('rehab_archived_patients_v1', archivedPatients, []);
 
 persist('rehab_schedule_v2', schedule, {});
+
+// A shared clock also updates counts while the app remains open, without writing data.
+export const treatmentClock = readable(new Date(), (set) => {
+  set(new Date());
+  const timer = setInterval(() => set(new Date()), 15000);
+  return () => clearInterval(timer);
+});
+export const patientProgress = derived(
+  [patients, archivedPatients, schedule, treatmentClock],
+  ([$patients, $archived, $schedule, $clock]) => Object.fromEntries(
+    [...$patients, ...$archived].map(p => [p.id, treatmentProgress(p, $schedule, $clock)])
+  )
+);
+export const patientTreatmentCounts = derived(
+  [patients, archivedPatients, schedule, currentDate, treatmentClock],
+  ([$patients, $archived, $schedule, $date, $clock]) => Object.fromEntries(
+    [...$patients, ...$archived].map(p => [p.id, treatmentCounts(p.id, $schedule, $date, $clock)])
+  )
+);
 
 // Defaults: winter (light), dark (dark)
 export const theme = writable('winter');
@@ -244,6 +264,32 @@ export const clearSlot = (date, time) => {
   showToast('已清除', 'info');
 };
 
+export const setTreatmentStatus = (date, time, status) => {
+  if (!['scheduled', 'completed', 'missed'].includes(status)) return;
+  const day = get(schedule)[date];
+  const selectedSlot = day?.[time];
+  const selectedHeadTime = selectedSlot?.isHead ? time : selectedSlot?.headTime;
+  const head = day?.[selectedHeadTime];
+  if (!head) return false;
+  if (status === 'completed' && !canCompleteTreatment(date, selectedHeadTime, head)) {
+    showToast('预约尚未结束，不能提前标记已完成', 'error');
+    return false;
+  }
+  schedule.update(s => {
+    const day = s[date];
+    const slot = day?.[time];
+    if (!slot) return s;
+    const headTime = slot.isHead ? time : slot.headTime;
+    if (!day[headTime]) return s;
+    const updated = Object.fromEntries(Object.entries(day).map(([t, entry]) => [
+      t, t === headTime || entry.headTime === headTime ? { ...entry, status } : entry
+    ]));
+    return { ...s, [date]: updated };
+  });
+  showToast(status === 'missed' ? '已标记未做，不扣治疗次数' : status === 'completed' ? '已完成，次数已更新' : '已恢复按预约结束时间自动统计', 'success');
+  return true;
+};
+
 export const checkYesterdayData = () => {
   const date = get(currentDate);
   const d = new Date(date);
@@ -262,9 +308,14 @@ export const copyYesterday = () => {
   const allSch = get(schedule);
 
   if (allSch[yesterday]) {
+    // Copy bookings only. Yesterday's completion/no-show never carries into today.
+    const copied = Object.fromEntries(Object.entries(allSch[yesterday]).map(([time, slot]) => {
+      const { status, ...booking } = slot;
+      return [time, booking];
+    }));
     schedule.update(s => ({
       ...s,
-      [date]: JSON.parse(JSON.stringify(allSch[yesterday])) // Deep copy
+      [date]: copied
     }));
     showToast('已复制昨日安排', 'success');
   } else {

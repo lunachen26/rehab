@@ -18,6 +18,8 @@ test.describe('Patient Management and Scheduling', () => {
     // await page.fill('input[placeholder="例如：脑卒中"]', 'Test Diagnosis');
 
     // Submit
+    await page.fill('#p-date', '2026-11-01');
+    await page.fill('#p-sessions', '20');
     await page.click('button:has-text("保存")');
 
     // Verify patient is in the palette list
@@ -31,6 +33,8 @@ test.describe('Patient Management and Scheduling', () => {
     // 1. Create Patient
     await page.click('button[title="添加患者"]');
     await page.fill('input[placeholder="例如：张伟"]', uniqueName);
+    await page.fill('#p-date', '2026-11-01');
+    await page.fill('#p-sessions', '20');
     await page.click('button:has-text("保存")');
 
     // 2. Select the patient in the palette
@@ -88,8 +92,10 @@ test.describe('Patient Management and Scheduling', () => {
     await page.fill('input[placeholder="例如：张伟"]', uniqueName);
 
     // Select 1 hour duration (now dynamic, defaulting to 60 mins)
-    await page.click('text=60 分钟');
+    await page.getByRole('radio', { name: '60 分钟', exact: true }).check();
 
+    await page.fill('#p-date', '2026-11-01');
+    await page.fill('#p-sessions', '20');
     await page.click('button:has-text("保存")');
 
     // 2. Select the patient
@@ -148,6 +154,8 @@ test.describe('Patient Management and Scheduling', () => {
     // 1. Create Patient
     await page.click('button[title="添加患者"]');
     await page.fill('input[placeholder="例如：张伟"]', originalName);
+    await page.fill('#p-date', '2026-11-01');
+    await page.fill('#p-sessions', '20');
     await page.click('button:has-text("保存")');
 
     // 2. Find the patient in palette and click edit
@@ -163,6 +171,8 @@ test.describe('Patient Management and Scheduling', () => {
     await page.fill('input[placeholder="例如：张伟"]', newName);
 
     // 4. Save
+    await page.fill('#p-date', '2026-11-01');
+    await page.fill('#p-sessions', '20');
     await page.click('button:has-text("保存")');
 
     // 5. Verify the name changed in the palette
@@ -176,6 +186,8 @@ test.describe('Patient Management and Scheduling', () => {
     // 1. Create a patient to use
     await page.click('button[title="添加患者"]');
     await page.fill('input[placeholder="例如：张伟"]', uniqueName);
+    await page.fill('#p-date', '2026-11-01');
+    await page.fill('#p-sessions', '20');
     await page.click('button:has-text("保存")');
 
     // Select the patient
@@ -219,11 +231,15 @@ test.describe('Patient Management and Scheduling', () => {
     // 1. Create Target Patient
     await page.click('button[title="添加患者"]');
     await page.fill('input[placeholder="例如：张伟"]', targetName);
+    await page.fill('#p-date', '2026-11-01');
+    await page.fill('#p-sessions', '20');
     await page.click('button:has-text("保存")');
 
     // 2. Create Other Patient
     await page.click('button[title="添加患者"]');
     await page.fill('input[placeholder="例如：张伟"]', otherName);
+    await page.fill('#p-date', '2026-11-01');
+    await page.fill('#p-sessions', '20');
     await page.click('button:has-text("保存")');
 
     // 3. Open Search / List Modal
@@ -248,11 +264,15 @@ test.describe('Patient Management and Scheduling', () => {
     // 1. Create Arranged Patient
     await page.click('button[title="添加患者"]');
     await page.fill('input[placeholder="例如：张伟"]', arrangedName);
+    await page.fill('#p-date', '2026-11-01');
+    await page.fill('#p-sessions', '20');
     await page.click('button:has-text("保存")');
 
     // 2. Create Unarranged Patient
     await page.click('button[title="添加患者"]');
     await page.fill('input[placeholder="例如：张伟"]', unarrangedName);
+    await page.fill('#p-date', '2026-11-01');
+    await page.fill('#p-sessions', '20');
     await page.click('button:has-text("保存")');
 
     // 3. Arrange the first patient at 08:00

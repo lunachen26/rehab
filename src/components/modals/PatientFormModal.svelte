@@ -4,7 +4,12 @@
     updatePatient,
     deletePatient,
     scheduleSettings,
+    schedule,
+    treatmentClock,
+    showToast,
+    currentDate,
   } from "../../lib/store";
+  import { treatmentProgress, treatmentCounts } from "../../lib/treatments.js";
 
   export let isOpen = false;
   /**
@@ -18,6 +23,9 @@
    * @property {string} [contact]
    * @property {string} [frequency]
    * @property {number} [price]
+   * @property {string} [treatmentDate]
+   * @property {number | null} [totalSessions]
+   * @property {string} [notes]
    */
 
   /** @type {Patient | null} */
@@ -32,6 +40,12 @@
   let contact = "";
   let frequency = "";
   let price = 0;
+  let treatmentDate = "";
+  let totalSessions = undefined;
+  let notes = "";
+
+  $: progress = treatmentProgress({ id: patientToEdit?.id, treatmentDate, totalSessions }, $schedule, $treatmentClock);
+  $: counts = treatmentCounts(patientToEdit?.id, $schedule, $currentDate, $treatmentClock);
 
   $: timeStep = $scheduleSettings?.timeStep || 30;
 
@@ -45,6 +59,9 @@
     contact = patientToEdit.contact || "";
     frequency = patientToEdit.frequency || "";
     price = patientToEdit.price || 0;
+    treatmentDate = patientToEdit.treatmentDate || "";
+    totalSessions = patientToEdit.totalSessions ?? undefined;
+    notes = patientToEdit.notes || "";
   } else if (isOpen && !patientToEdit) {
     reset();
   }
@@ -60,9 +77,25 @@
 
   const handleSubmit = () => {
     if (!name.trim()) return;
+    const hasCount = totalSessions !== undefined && totalSessions !== null && totalSessions !== "";
+    if (category === 'Outpatient' && (!hasCount || !treatmentDate)) {
+      showToast("门诊患者必须填写日期和次数", "error");
+      return;
+    }
+    const incompleteCourse = category === 'Inpatient' ? hasCount && !treatmentDate : Boolean(treatmentDate) !== hasCount;
+    if (incompleteCourse || (hasCount && (!Number.isInteger(Number(totalSessions)) || Number(totalSessions) < 0))) {
+      showToast(category === 'Inpatient' ? "住院次数可留空；填写次数时请同时填写日期和非负整数次数" : "请同时填写日期和非负整数次数，或同时留空", "error");
+      return;
+    }
+    if (treatmentDate && (Number.isNaN(Date.parse(treatmentDate)) || new Date(`${treatmentDate}T12:00:00`).toLocaleDateString('en-CA') !== treatmentDate)) {
+      showToast("请填写有效日期", "error");
+      return;
+    }
+    const courseFields = { treatmentDate, totalSessions: hasCount ? Number(totalSessions) : null, notes };
 
     if (patientToEdit) {
       updatePatient(patientToEdit.id, {
+        ...courseFields,
         name,
         type,
         duration,
@@ -74,6 +107,7 @@
       });
     } else {
       addPatient({
+        ...courseFields,
         name,
         type,
         duration,
@@ -108,6 +142,9 @@
     contact = "";
     frequency = "";
     price = 0;
+    treatmentDate = "";
+    totalSessions = undefined;
+    notes = "";
   };
 </script>
 
@@ -165,46 +202,47 @@
           />
         </div>
 
-        <!-- Price (New) -->
-        <div class="form-control w-full">
-          <label class="label" for="p-price"
-            ><span class="label-text">单次费用 (元)</span></label
-          >
-          <input
-            id="p-price"
-            type="number"
-            bind:value={price}
-            placeholder="0"
-            class="input input-bordered w-full"
-          />
-        </div>
-
-        <!-- Frequency (New) -->
-        <div class="form-control w-full">
-          <label class="label" for="p-freq"
-            ><span class="label-text">日期/次数</span></label
-          >
-          <input
-            id="p-freq"
-            type="text"
-            bind:value={frequency}
-            placeholder="例如：2025.12.07开了10次"
-            class="input input-bordered w-full"
-          />
-        </div>
-
         <!-- Diagnosis -->
         <div class="form-control w-full">
-          <label class="label" for="p-diag"
-            ><span class="label-text">诊断 / 备注</span></label
-          >
-          <input
-            id="p-diag"
-            type="text"
-            bind:value={type}
-            placeholder="例如：脑卒中"
-            class="input input-bordered w-full"
-          />
+          <label class="label" for="p-diag"><span class="label-text">诊断</span></label>
+          <input id="p-diag" type="text" bind:value={type} placeholder="例如：脑卒中" class="input input-bordered w-full" />
+        </div>
+
+        <div class="form-control w-full">
+          <label class="label" for="p-date"><span class="label-text">日期</span></label>
+          <input id="p-date" type="date" bind:value={treatmentDate} required={category === 'Outpatient'} aria-required={category === 'Outpatient'} class="input input-bordered w-full" />
+          <p class="text-sm text-base-content/60 mt-1">{category === 'Inpatient' ? '可记录住院治疗开始日期，无需填写总次数也能自动统计。' : '本疗程开具日期，从此日期起统计治疗次数。'}</p>
+        </div>
+
+        <div class="form-control w-full">
+          <label class="label" for="p-sessions"><span class="label-text">次数</span></label>
+          <input id="p-sessions" type="number" min="0" step="1" bind:value={totalSessions} required={category === 'Outpatient'} aria-required={category === 'Outpatient'} placeholder={category === 'Inpatient' ? '住院可不填' : '必填，例如：5'} class="input input-bordered w-full" />
+          <p class="text-sm text-base-content/60 mt-1">{category === 'Inpatient' ? '住院患者次数可留空，已做次数自动统计；填写总次数后也可查看剩余次数。' : '门诊必填：本疗程日期和开具总次数。无需每天修改，历史预约也会参与统计。'}</p>
+          <div class="rounded-lg bg-base-200 p-3 mt-2" aria-live="polite">
+            <p class="font-medium">累计已做 {counts.completed} 次</p>
+            <p class="text-sm">{$currentDate} 当日已做 {counts.dailyCompleted} 次</p>
+          </div>
+          {#if progress}
+            <div class="rounded-lg bg-primary/10 p-3 mt-2" aria-live="polite">
+              <p class="font-bold text-primary">剩余 {progress.remaining} 次</p>
+              <p class="text-sm">共 {progress.total} 次 · 已做 {progress.completed} 次 · 未做 {progress.missed} 次</p>
+              <p class="text-sm text-base-content/70 mt-1">预约结束后自动扣次；未做请在预约详情中标记。</p>
+              {#if progress.completed > progress.total}<p class="text-sm text-warning">已做次数超过开具次数，请核对疗程日期或总次数。</p>{/if}
+            </div>
+          {/if}
+          {#if frequency}
+            <p class="text-sm text-base-content/60 mt-2">原日期/次数：{frequency}（已保留）。{category === 'Inpatient' ? '住院次数可留空，已做次数仍自动统计。' : '请核对本疗程日期和开具总次数后启用自动统计。'}</p>
+          {/if}
+        </div>
+
+        <div class="form-control w-full">
+          <label class="label" for="p-notes"><span class="label-text">备注</span></label>
+          <textarea id="p-notes" bind:value={notes} placeholder="例如：周二请假未做；未做预约请同时在预约详情标记" class="textarea textarea-bordered w-full" rows="3"></textarea>
+        </div>
+
+        <div class="form-control w-full">
+          <label class="label" for="p-price"><span class="label-text">单次费用 (元)</span></label>
+          <input id="p-price" type="number" bind:value={price} placeholder="0" class="input input-bordered w-full" />
         </div>
 
         <!-- Category -->
@@ -235,6 +273,7 @@
         <!-- Duration -->
         <div class="form-control">
           <div class="label"><span class="label-text">默认时长</span></div>
+          <p class="text-sm text-base-content/60 mb-2">30 分钟计 1 次治疗，60 分钟计 2 次治疗。</p>
           <div class="flex gap-4">
             <label
               class="label cursor-pointer gap-2 border rounded-lg px-3 py-2 flex-1 {duration ===

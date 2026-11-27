@@ -4,6 +4,8 @@
     selectedPatientId,
     selectedDuration,
     scheduleSettings,
+    patientProgress,
+    patientTreatmentCounts,
   } from "../lib/store";
   import { createEventDispatcher } from "svelte";
   import { fade } from "svelte/transition";
@@ -107,6 +109,10 @@
         {/if}
 
         <span>{p.name}</span>
+        <span class="text-xs" title="所有历史已完成治疗的累计次数（30分钟1次，60分钟2次）">累计已做 {$patientTreatmentCounts[p.id]?.completed || 0} 次</span>
+        {#if $patientProgress[p.id]}
+          <span class="text-xs">剩余 {$patientProgress[p.id].remaining} 次</span>
+        {/if}
 
         <!-- Duration Badge -->
         {#if $selectedPatientId === p.id}

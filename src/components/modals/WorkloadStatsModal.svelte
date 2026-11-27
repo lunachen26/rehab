@@ -1,5 +1,6 @@
 <script>
-  import { schedule, patients, currentDate } from "../../lib/store";
+  import { schedule, patients, archivedPatients, currentDate, treatmentClock } from "../../lib/store";
+  import { treatmentStatus, treatmentUnits } from "../../lib/treatments.js";
   import { fade, fly } from "svelte/transition";
 
   export let isOpen = false;
@@ -12,31 +13,24 @@
   // Stats
   let totalIncome = 0;
   let totalVisits = 0;
+  let totalTreatments = 0;
   let breakdown = []; // { patientName, count, income }
 
-  const calculate = () => {
+  const calculate = (scheduleData, patientData, now) => {
     totalIncome = 0;
     totalVisits = 0;
+    totalTreatments = 0;
     breakdown = [];
 
     // Map patient ID to pricing
-    const patientMap = new Map($patients.map((p) => [p.id, p]));
+    const patientMap = new Map(patientData.map((p) => [p.id, p]));
     const accum = {}; // { patientId: { count: 0, income: 0 } }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    // Inclusive range check
-    // Loop through schedule dates
-    Object.entries($schedule).forEach(([dateStr, daySchedule]) => {
-      const d = new Date(dateStr);
-      // Need to normalize time parts for accurate comparison?
-      // Date string 'YYYY-MM-DD' parses to UTC usually, but local time is tricky.
-      // Let's rely on string comparison if format is ISO YYYY-MM-DD
-
+    // ISO date strings allow an inclusive comparison without UTC conversion.
+    Object.entries(scheduleData).forEach(([dateStr, daySchedule]) => {
       if (dateStr >= startDate && dateStr <= endDate) {
-        Object.values(daySchedule).forEach((slot) => {
-          if (slot.isHead) {
+        Object.entries(daySchedule).forEach(([time, slot]) => {
+          if (slot.isHead && treatmentStatus(dateStr, time, slot, now) === 'completed') {
             const pid = slot.patientId;
             const p = patientMap.get(pid);
             // If patient deleted, we might not find them. Use defaults.
@@ -50,11 +44,12 @@
                 income: 0,
                 name: p ? p.name : "Unknown",
               };
-            accum[pid].count += 1;
+            accum[pid].count += treatmentUnits(slot);
             accum[pid].income += price;
 
             totalIncome += price;
             totalVisits += 1;
+            totalTreatments += treatmentUnits(slot);
           }
         });
       }
@@ -71,11 +66,10 @@
     const date = new Date(y, m - 1, d);
     date.setMonth(date.getMonth() - 1);
     startDate = date.toLocaleDateString("en-CA");
-    calculate();
   }
 
-  $: if (startDate || endDate) {
-    if (isOpen) calculate();
+  $: if (isOpen && (startDate || endDate)) {
+    calculate($schedule, [...$patients, ...$archivedPatients], $treatmentClock);
   }
 </script>
 
@@ -136,6 +130,7 @@
             <div class="stat-value">¥{totalIncome}</div>
             <div class="stat-desc text-primary-content/70">
               共 {totalVisits} 人次
+              <span> · {totalTreatments} 次治疗</span>
             </div>
           </div>
         </div>

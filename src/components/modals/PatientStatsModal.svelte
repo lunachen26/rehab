@@ -1,5 +1,6 @@
 <script>
-  import { patients, schedule } from "../../lib/store";
+  import { patients, schedule, treatmentClock, patientProgress } from "../../lib/store";
+  import { treatmentStatus, statusLabels, treatmentUnits } from "../../lib/treatments.js";
   import { fade, fly } from "svelte/transition";
 
   export let isOpen = false;
@@ -9,7 +10,8 @@
   let selectedPatient = null;
 
   // Derived stats
-  $: stats = calculateStats(selectedPatient, $schedule);
+  $: stats = calculateStats(selectedPatient, $schedule, $treatmentClock);
+  $: progress = $patientProgress[selectedPatient?.id];
 
   $: filteredPatients = $patients.filter((p) => {
     const q = searchQuery.toLowerCase();
@@ -19,7 +21,7 @@
     );
   });
 
-  function calculateStats(patient, scheduleData) {
+  function calculateStats(patient, scheduleData, now) {
     if (!patient) return null;
 
     let visits = [];
@@ -33,6 +35,8 @@
             date: date,
             time: time,
             duration: slot.duration || 30, // Fallback if not stored
+            status: treatmentStatus(date, time, slot, now),
+            units: treatmentUnits(slot),
           });
         }
       });
@@ -46,7 +50,8 @@
     });
 
     return {
-      count: visits.length,
+      count: visits.filter(v => v.status === 'completed').reduce((sum, v) => sum + v.units, 0),
+      latestCompleted: visits.find(v => v.status === 'completed')?.date,
       history: visits,
     };
   }
@@ -148,11 +153,15 @@
         {:else}
           <!-- Detail View -->
           <div class="flex-1 overflow-y-auto p-6">
+            {#if progress}
+              <p class="font-bold text-primary mb-4">本疗程剩余 {progress.remaining} 次 / 共 {progress.total} 次（未做 {progress.missed} 次）</p>
+            {/if}
+            {#if selectedPatient.notes}<p class="text-sm whitespace-pre-wrap mb-4">备注：{selectedPatient.notes}</p>{/if}
             <!-- Summary Cards -->
             <div class="grid grid-cols-2 gap-4 mb-8">
               <div class="stats shadow bg-base-200/50">
                 <div class="stat place-items-center">
-                  <div class="stat-title">总计就诊</div>
+                  <div class="stat-title">已完成治疗</div>
                   <div class="stat-value text-primary">{stats.count}</div>
                   <div class="stat-desc">次</div>
                 </div>
@@ -161,13 +170,13 @@
                 <div class="stat place-items-center">
                   <div class="stat-title">最近就诊</div>
                   <div class="stat-value text-xs mt-2">
-                    {stats.history.length > 0 ? stats.history[0].date : "暂无"}
+                    {stats.latestCompleted || "暂无"}
                   </div>
                 </div>
               </div>
             </div>
 
-            <h3 class="font-bold mb-4 px-1">就诊记录 ({stats.count})</h3>
+            <h3 class="font-bold mb-4 px-1">预约记录 ({stats.history.length})</h3>
 
             {#if stats.history.length === 0}
               <div
@@ -227,6 +236,8 @@
                       </div>
                       <div class="text-xs text-base-content/70">
                         时长: {item.duration} 分钟
+                        · {item.units} 次治疗
+                        <span class="badge badge-sm ml-2">{statusLabels[item.status]}</span>
                       </div>
                     </div>
                   </div>
