@@ -275,7 +275,7 @@
 
 <div class="drawer" data-theme={$theme}>
   <input id="my-drawer" type="checkbox" class="drawer-toggle" />
-  <div class="drawer-content flex flex-col min-h-screen bg-base-200 font-sans">
+  <div class="app-shell drawer-content flex flex-col min-h-screen bg-base-200 font-sans">
     <Header />
 
     <PatientPalette
@@ -383,7 +383,7 @@
   <div class="drawer-side z-[100]">
     <label for="my-drawer" aria-label="close sidebar" class="drawer-overlay"
     ></label>
-    <ul class="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
+    <ul class="app-sidebar menu p-4 w-80 min-h-full bg-base-200 text-base-content">
       <li class="menu-title">菜单</li>
       <li>
         <button on:click={handleCopy} class="gap-4">

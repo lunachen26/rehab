@@ -45,7 +45,7 @@
 </script>
 
 <div
-  class="sticky top-[3.5rem] z-40 bg-base-100/95 backdrop-blur border-b border-base-200"
+  class="app-patient-palette sticky z-40 bg-base-100/95 backdrop-blur border-b border-base-200"
 >
   <div
     class="flex items-center gap-2 overflow-x-auto p-3 no-scrollbar snap-x ml-2"

@@ -2,7 +2,12 @@
 @config "../tailwind.config.js";
 
 :root {
+  --app-safe-top: env(safe-area-inset-top, 0px);
+  --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-header-height: calc(3.5rem + var(--app-safe-top));
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -10,4 +15,42 @@
 body {
   /* Prevent pull-to-refresh on mobile */
   overscroll-behavior-y: none;
+}
+
+.app-shell {
+  min-width: 0;
+  min-height: 100dvh;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: var(--app-safe-bottom);
+}
+
+.app-header {
+  height: var(--app-header-height);
+  min-height: var(--app-header-height);
+  padding-top: var(--app-safe-top);
+  padding-bottom: 0;
+}
+
+.app-date-navigation {
+  top: calc(var(--app-safe-top) + 1.75rem);
+  transform: translate(-50%, -50%);
+}
+
+.app-patient-palette {
+  top: var(--app-header-height);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.app-sidebar {
+  padding-top: calc(1rem + var(--app-safe-top));
+  padding-bottom: calc(1rem + var(--app-safe-bottom));
+}
+
+@media (pointer: coarse) {
+  /* iOS otherwise zooms the viewport when focusing small form controls. */
+  input:not([type='radio']):not([type='checkbox']), select, textarea {
+    font-size: 16px;
+  }
 }

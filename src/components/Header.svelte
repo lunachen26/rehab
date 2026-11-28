@@ -36,7 +36,7 @@
 </script>
 
 <header
-  class="navbar bg-base-100 shadow-sm sticky top-0 z-50 px-2 min-h-[3.5rem]"
+  class="app-header navbar bg-base-100 shadow-sm sticky top-0 z-50 px-2"
 >
   <!-- Left: Sidebar Toggle -->
   <div class="navbar-start">
@@ -64,7 +64,7 @@
 
   <!-- Center: Date Navigation (Absolutely Centered) -->
   <div
-    class="absolute left-1/2 transform -translate-x-1/2 flex gap-2 items-center"
+    class="app-date-navigation absolute left-1/2 flex gap-2 items-center"
   >
     <!-- Prev Day -->
     <button
